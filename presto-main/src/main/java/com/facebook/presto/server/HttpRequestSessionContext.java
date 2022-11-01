@@ -502,7 +502,7 @@ public final class HttpRequestSessionContext
      */
     private boolean isTracingEnabled()
     {
-        String clientValue = systemProperties.getOrDefault(DISTRIBUTED_TRACING_MODE, TracingConfig.DistributedTracingMode.NO_TRACE.name());
+        String clientValue = systemProperties.getOrDefault(DISTRIBUTED_TRACING_MODE, "");
 
         // Client session setting overrides everything.
         if (clientValue.equalsIgnoreCase(TracingConfig.DistributedTracingMode.ALWAYS_TRACE.name())) {
@@ -511,13 +511,13 @@ public final class HttpRequestSessionContext
         if (clientValue.equalsIgnoreCase(TracingConfig.DistributedTracingMode.NO_TRACE.name())) {
             return false;
         }
+        if (clientValue.equalsIgnoreCase(TracingConfig.DistributedTracingMode.SAMPLE_BASED.name())) {
+            return true;
+        }
 
-        // Client not set, we then take system default value, and only init
-        // tracing if it's SAMPLE_BASED (TracingConfig prohibits you to
-        // configure system default to be ALWAYS_TRACE). If property manager
-        // not provided then false.
+        // Client not set, we then take system default value if ALWAYS_TRACE (SAMPLE_BASED disabled). If property manager not provided then false.
         return sessionPropertyManager
-                .map(manager -> manager.decodeSystemPropertyValue(DISTRIBUTED_TRACING_MODE, null, TracingConfig.DistributedTracingMode.class) == TracingConfig.DistributedTracingMode.SAMPLE_BASED)
+                .map(manager -> manager.decodeSystemPropertyValue(DISTRIBUTED_TRACING_MODE, null, String.class).equalsIgnoreCase(TracingConfig.DistributedTracingMode.ALWAYS_TRACE.name()))
                 .orElse(false);
     }
 
