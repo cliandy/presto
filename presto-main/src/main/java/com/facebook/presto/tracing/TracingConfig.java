@@ -24,6 +24,13 @@ public class TracingConfig
     {
         public static final String NOOP = "noop";
         public static final String SIMPLE = "simple";
+        public static final String OTEL = "otel";
+    }
+
+    public static class ContextPropagator
+    {
+        public static final String W3C = "w3c";
+        public static final String B3_SINGLE_HEADER = "b3_single_header";
     }
 
     public enum DistributedTracingMode

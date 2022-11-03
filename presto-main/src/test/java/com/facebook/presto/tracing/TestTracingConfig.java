@@ -39,6 +39,7 @@ public class TestTracingConfig
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("tracing.tracer-type", "simple")
                 .put("tracing.enable-distributed-tracing", "true")
+                .put("tracing.context-propagator", "b3_single_header")
                 .put("tracing.distributed-tracing-mode", "always_trace")
                 .build();
 
