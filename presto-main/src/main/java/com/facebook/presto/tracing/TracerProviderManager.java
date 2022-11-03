@@ -24,6 +24,7 @@ public class TracerProviderManager
     private final String tracerType;
     private final boolean enableDistributedTracing;
     private final TracingConfig.DistributedTracingMode distributedTracingMode;
+    private final boolean systemTracingEnabled;
     private TracerProvider tracerProvider;
 
     @Inject
@@ -34,15 +35,21 @@ public class TracerProviderManager
         this.tracerType = config.getTracerType();
         this.enableDistributedTracing = config.getEnableDistributedTracing();
         this.distributedTracingMode = config.getDistributedTracingMode();
+        this.systemTracingEnabled = this.enableDistributedTracing && this.distributedTracingMode.name().equalsIgnoreCase(TracingConfig.DistributedTracingMode.ALWAYS_TRACE.name());
     }
 
     public void addTracerProviderFactory(TracerProvider tracerProvider)
     {
-        if (tracerType.equals(tracerProvider.getTracerType()) &&
-                enableDistributedTracing &&
-                distributedTracingMode.name().equalsIgnoreCase(TracingConfig.DistributedTracingMode.ALWAYS_TRACE.name())) {
+        if (!tracerType.equals(tracerProvider.getTracerType())) {
+            throw new IllegalArgumentException(
+                    format(
+                            "Plugin-configured tracer provider ('%s') does not match system-configured provider ('%s').",
+                            this.tracerProvider.getName(),
+                            tracerType));
+        }
+        if (systemTracingEnabled) {
             if (this.tracerProvider != null) {
-                throw new IllegalArgumentException(format("A tracer provider ('%s') has already been set", this.tracerProvider.getName()));
+                throw new IllegalArgumentException(format("Only a single plugin should set the tracer provider ('%s').", this.tracerProvider.getTracerType()));
             }
             this.tracerProvider = tracerProvider;
         }
@@ -50,8 +57,16 @@ public class TracerProviderManager
 
     public void loadTracerProvider()
     {
-        if (this.tracerProvider == null) { // open-telemetry plugin not used or tracer provider not specified
-            this.tracerProvider = new NoopTracerProvider();
+        if (this.tracerProvider == null) {
+            // open-telemetry plugin not used / tracer provider not specified or not matching system config / tracing disabled
+            // Check if SimpleTracer is configured and tracing is enabled
+            // Otherwise, use Noop implementation
+            if (this.tracerType.equals(TracingConfig.TracerType.SIMPLE) && systemTracingEnabled) {
+                this.tracerProvider = new SimpleTracerProvider();
+            }
+            else {
+                this.tracerProvider = new NoopTracerProvider();
+            }
         }
     }
 
