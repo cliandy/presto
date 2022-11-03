@@ -26,8 +26,20 @@ public class SimpleTracerProvider
     }
 
     @Override
-    public Tracer getNewTracer()
+    public String getName()
     {
-        return new SimpleTracer();
+        return "Simple tracer provider";
+    }
+
+    @Override
+    public String getTracerType()
+    {
+        return TracingConfig.TracerType.SIMPLE;
+    }
+
+    @Override
+    public Tracer getNewTracer(String traceToken)
+    {
+        return new SimpleTracer(traceToken);
     }
 }

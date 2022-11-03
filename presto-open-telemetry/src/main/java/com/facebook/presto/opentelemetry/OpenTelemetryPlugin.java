@@ -11,16 +11,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.presto.spi.tracing;
+package com.facebook.presto.opentelemetry;
 
-public interface TracerProvider
+import com.facebook.presto.spi.Plugin;
+import com.facebook.presto.spi.tracing.TracerProvider;
+import com.google.common.collect.ImmutableList;
+
+public class OpenTelemetryPlugin
+        implements Plugin
 {
-    String getName();
-
-    String getTracerType();
-    /**
-     *
-     * @return A @Tracer that should be kept throughout the whole duration of tracing.
-     */
-    Tracer getNewTracer(String traceToken);
+    @Override
+    public Iterable<TracerProvider> getTracerProviders()
+    {
+        return ImmutableList.of(new OpenTelemetryTracerProvider());
+    }
 }
