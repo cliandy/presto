@@ -11,36 +11,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.presto.tracing;
+package com.facebook.presto.opentelemetry;
 
-import com.facebook.presto.spi.tracing.NoopTracer;
 import com.facebook.presto.spi.tracing.Tracer;
 import com.facebook.presto.spi.tracing.TracerProvider;
+import com.facebook.presto.tracing.TracingConfig;
 import com.google.inject.Inject;
 
-public class NoopTracerProvider
+public class OpenTelemetryTracerProvider
         implements TracerProvider
 {
-    public static final NoopTracerProvider NOOP_TRACER_PROVIDER = new NoopTracerProvider();
-    public static final NoopTracer NOOP_TRACER = new NoopTracer();
     @Inject
-    public NoopTracerProvider() {}
+    public OpenTelemetryTracerProvider() {}
 
     @Override
     public String getName()
     {
-        return "NOOP tracer provider";
+        return "Open telemetry tracer provider";
     }
 
     @Override
     public String getTracerType()
     {
-        return TracingConfig.TracerType.NOOP;
+        return TracingConfig.TracerType.OTEL;
     }
 
     @Override
     public Tracer getNewTracer(String traceToken)
     {
-        return NOOP_TRACER;
+        return new OpenTelemetryTracer(traceToken);
     }
 }
