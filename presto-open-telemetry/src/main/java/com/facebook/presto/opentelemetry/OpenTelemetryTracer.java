@@ -15,10 +15,14 @@ package com.facebook.presto.opentelemetry;
 
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.tracing.Tracer;
+import com.facebook.presto.tracing.TracingConfig;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
+import io.opentelemetry.context.propagation.TextMapGetter;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,25 +32,65 @@ import static com.facebook.presto.spi.StandardErrorCode.DISTRIBUTED_TRACING_ERRO
 public class OpenTelemetryTracer
         implements Tracer
 {
-    public static final OpenTelemetry OPEN_TELEMETRY = OpenTelemetryBuilder.build();
-    public final io.opentelemetry.api.trace.Tracer openTelemetryTracer;
-    public final String traceToken;
-    public final Span parentSpan;
+    private static String currentContextPropagator = TracingConfig.ContextPropagator.B3_SINGLE_HEADER;
+    private static OpenTelemetry openTelemetry = OpenTelemetryBuilder.build(currentContextPropagator);
+    private final io.opentelemetry.api.trace.Tracer openTelemetryTracer;
+    private final String traceToken;
+    private final Span parentSpan;
 
     public final Map<String, Span> spanMap = new ConcurrentHashMap<String, Span>();
     public final Map<String, Span> recorderSpanMap = new LinkedHashMap<String, Span>();
 
-    public OpenTelemetryTracer(String traceToken)
+    // Trivial getter method to return carrier
+    // Carrier will be the propagated context string
+    private final TextMapGetter<String> trivialGetter = new TextMapGetter<String>()
     {
-        openTelemetryTracer = OPEN_TELEMETRY.getTracer(tracerName);
+        @Override
+        public String get(String carrier, String key)
+        {
+            return carrier;
+        }
+
+        @Override
+        public Iterable<String> keys(String carrier)
+        {
+            return Arrays.asList(get(carrier, null));
+        }
+    };
+
+    public OpenTelemetryTracer(String traceToken, String contextPropagator, String propagatedContext)
+    {
+        // Rebuild OPEN_TELEMETRY instance if necessary (to use different context propagator)
+        // Will only occur once at max, if contextPropagator is different from B3_SINGLE_HEADER
+        if (!contextPropagator.equals(currentContextPropagator)) {
+            openTelemetry = OpenTelemetryBuilder.build(contextPropagator);
+            currentContextPropagator = contextPropagator;
+        }
+
+        openTelemetryTracer = openTelemetry.getTracer(tracerName);
         this.traceToken = traceToken;
 
-        parentSpan = openTelemetryTracer.spanBuilder("Trace start").startSpan();
-        parentSpan.setAttribute("trace_id", traceToken);
+        if (propagatedContext == null) {
+            this.parentSpan = createParentSpan();
+        }
+        else {
+            Context extractedContext = openTelemetry.getPropagators().getTextMapPropagator()
+                    .extract(Context.current(), propagatedContext, trivialGetter);
+            try (Scope scope = extractedContext.makeCurrent()) {
+                this.parentSpan = createParentSpan();
+            }
+        }
 
         synchronized (recorderSpanMap) {
-            recorderSpanMap.put("Trace start", parentSpan);
+            recorderSpanMap.put("Trace start", this.parentSpan);
         }
+    }
+
+    private Span createParentSpan()
+    {
+        Span parentSpan = openTelemetryTracer.spanBuilder("Trace start").startSpan();
+        parentSpan.setAttribute("trace_id", traceToken);
+        return parentSpan;
     }
 
     /**

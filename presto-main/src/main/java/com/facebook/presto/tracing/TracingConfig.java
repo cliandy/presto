@@ -16,6 +16,7 @@ package com.facebook.presto.tracing;
 import com.facebook.airlift.configuration.Config;
 import com.facebook.presto.spi.PrestoException;
 
+import static com.facebook.presto.spi.StandardErrorCode.CONTEXT_PROPAGATOR_ERROR;
 import static com.facebook.presto.spi.StandardErrorCode.DISTRIBUTED_TRACING_ERROR;
 
 public class TracingConfig
@@ -27,6 +28,13 @@ public class TracingConfig
         public static final String OTEL = "otel";
     }
 
+    public static class ContextPropagator
+    {
+        public static final String W3C = "w3c";
+        public static final String B3_SINGLE_HEADER = "b3_single_header";
+        public static final String B3_MULTIPLE_HEADER = "b3_multiple_header";
+    }
+
     public enum DistributedTracingMode
     {
         NO_TRACE,
@@ -36,6 +44,7 @@ public class TracingConfig
 
     private String tracerType = TracerType.NOOP;
     private DistributedTracingMode tracingMode = DistributedTracingMode.NO_TRACE;
+    private String contextPropagator = ContextPropagator.B3_SINGLE_HEADER;
     private boolean enableDistributedTracing;
 
     public String getTracerType()
@@ -59,6 +68,23 @@ public class TracingConfig
     public TracingConfig setEnableDistributedTracing(boolean enableDistributedTracing)
     {
         this.enableDistributedTracing = enableDistributedTracing;
+        return this;
+    }
+
+    public String getContextPropagator()
+    {
+        return contextPropagator;
+    }
+
+    @Config("tracing.context-propagator")
+    public TracingConfig setContextPropagator(String contextPropagator)
+    {
+        if (!contextPropagator.equals(ContextPropagator.B3_SINGLE_HEADER)) {
+            throw new PrestoException(
+                    CONTEXT_PROPAGATOR_ERROR,
+                    "Only B3 context propagation with single header is currently supported.");
+        }
+        this.contextPropagator = contextPropagator;
         return this;
     }
 

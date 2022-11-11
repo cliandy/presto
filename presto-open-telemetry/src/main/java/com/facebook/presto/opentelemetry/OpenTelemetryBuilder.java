@@ -13,11 +13,14 @@
  */
 package com.facebook.presto.opentelemetry;
 
+import com.facebook.presto.tracing.TracingConfig;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
+import io.opentelemetry.extension.trace.propagation.B3Propagator;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
@@ -31,7 +34,26 @@ public final class OpenTelemetryBuilder
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated.");
     }
 
-    public static OpenTelemetry build()
+    /**
+     * Get instance of propagator.
+     * Currently, only B3_SINGLE_HEADER can be passed in.
+     */
+    private static TextMapPropagator getPropagatorInstance(String contextPropagator)
+    {
+        TextMapPropagator propagator;
+        if (contextPropagator.equals(TracingConfig.ContextPropagator.W3C)) {
+            propagator = W3CTraceContextPropagator.getInstance();
+        }
+        else if (contextPropagator.equals(TracingConfig.ContextPropagator.B3_SINGLE_HEADER)) {
+            propagator = B3Propagator.injectingSingleHeader();
+        }
+        else {
+            propagator = B3Propagator.injectingMultiHeaders();
+        }
+        return propagator;
+    }
+
+    public static OpenTelemetry build(String contextPropagator)
     {
         Resource resource = Resource.getDefault()
                 .merge(Resource.create(Attributes.of(ResourceAttributes.SERVICE_NAME, "presto")));
@@ -43,7 +65,7 @@ public final class OpenTelemetryBuilder
 
         OpenTelemetry openTelemetry = OpenTelemetrySdk.builder()
                 .setTracerProvider(sdkTracerProvider)
-                .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+                .setPropagators(ContextPropagators.create(OpenTelemetryBuilder.getPropagatorInstance(contextPropagator)))
                 .buildAndRegisterGlobal();
 
         return openTelemetry;

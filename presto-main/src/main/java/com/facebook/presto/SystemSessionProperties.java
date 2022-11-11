@@ -225,6 +225,7 @@ public final class SystemSessionProperties
     public static final String RESOURCE_AWARE_SCHEDULING_STRATEGY = "resource_aware_scheduling_strategy";
     public static final String HEAP_DUMP_ON_EXCEEDED_MEMORY_LIMIT_ENABLED = "heap_dump_on_exceeded_memory_limit_enabled";
     public static final String EXCEEDED_MEMORY_LIMIT_HEAP_DUMP_FILE_DIRECTORY = "exceeded_memory_limit_heap_dump_file_directory";
+    public static final String CONTEXT_PROPAGATOR = "context_propagator";
     public static final String DISTRIBUTED_TRACING_MODE = "distributed_tracing_mode";
     public static final String VERBOSE_RUNTIME_STATS_ENABLED = "verbose_runtime_stats_enabled";
     public static final String STREAMING_FOR_PARTIAL_AGGREGATION_ENABLED = "streaming_for_partial_aggregation_enabled";
@@ -1218,6 +1219,11 @@ public final class SystemSessionProperties
                         "Enable query optimization with materialized view",
                         featuresConfig.isQueryOptimizationWithMaterializedViewEnabled(),
                         true),
+                stringProperty(
+                        CONTEXT_PROPAGATOR,
+                        "Context propagator for Open Telemetry tracing. w3c, b3_single_header, or b3_multiple_header",
+                        tracingConfig.getContextPropagator(),
+                        false),
                 stringProperty(
                         DISTRIBUTED_TRACING_MODE,
                         "Mode for distributed tracing. NO_TRACE, ALWAYS_TRACE, or SAMPLE_BASED",

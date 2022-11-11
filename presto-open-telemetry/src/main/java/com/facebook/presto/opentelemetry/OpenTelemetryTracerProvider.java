@@ -37,8 +37,8 @@ public class OpenTelemetryTracerProvider
     }
 
     @Override
-    public Tracer getNewTracer(String traceToken)
+    public Tracer getNewTracer(String traceToken, String contextPropagator, String propagatedContext)
     {
-        return new OpenTelemetryTracer(traceToken);
+        return new OpenTelemetryTracer(traceToken, contextPropagator, propagatedContext);
     }
 }

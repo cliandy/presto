@@ -57,7 +57,9 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.facebook.airlift.json.JsonCodec.jsonCodec;
+import static com.facebook.presto.SystemSessionProperties.CONTEXT_PROPAGATOR;
 import static com.facebook.presto.SystemSessionProperties.DISTRIBUTED_TRACING_MODE;
+import static com.facebook.presto.client.PrestoHeaders.PRESTO_B3_SINGLE_HEADER_PROPAGATION;
 import static com.facebook.presto.client.PrestoHeaders.PRESTO_CATALOG;
 import static com.facebook.presto.client.PrestoHeaders.PRESTO_CLIENT_INFO;
 import static com.facebook.presto.client.PrestoHeaders.PRESTO_CLIENT_TAGS;
@@ -74,6 +76,7 @@ import static com.facebook.presto.client.PrestoHeaders.PRESTO_TIME_ZONE;
 import static com.facebook.presto.client.PrestoHeaders.PRESTO_TRACE_TOKEN;
 import static com.facebook.presto.client.PrestoHeaders.PRESTO_TRANSACTION_ID;
 import static com.facebook.presto.client.PrestoHeaders.PRESTO_USER;
+import static com.facebook.presto.client.PrestoHeaders.PRESTO_W3C_PROPAGATION;
 import static com.facebook.presto.sql.parser.ParsingOptions.DecimalLiteralTreatment.AS_DOUBLE;
 import static com.google.common.base.Strings.emptyToNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -211,9 +214,15 @@ public final class HttpRequestSessionContext
 
         this.sessionFunctions = parseSessionFunctionHeader(servletRequest);
         this.sessionPropertyManager = requireNonNull(sessionPropertyManager, "sessionPropertyManager is null");
+
         String tunnelTraceId = trimEmptyToNull(servletRequest.getHeader(PRESTO_TRACE_TOKEN));
+        String contextPropagator = sessionPropertyManager
+                .map(manager -> manager.decodeSystemPropertyValue(CONTEXT_PROPAGATOR, null, String.class))
+                .orElse(TracingConfig.ContextPropagator.B3_SINGLE_HEADER);
+        String propagatedContext = getPropagatedContext(contextPropagator, servletRequest);
+
         if (isTracingEnabled()) {
-            this.tracer = Optional.of(requireNonNull(tracerProvider.getNewTracer(tunnelTraceId), "tracer is null"));
+            this.tracer = Optional.of(requireNonNull(tracerProvider.getNewTracer(tunnelTraceId, contextPropagator, propagatedContext), "tracer is null"));
 
             // If tunnel trace token is null, we expose the Presto tracing id.
             // Otherwise we preserve the ability of trace token tunneling but
@@ -223,6 +232,25 @@ public final class HttpRequestSessionContext
         else {
             this.tracer = Optional.of(NoopTracerProvider.NOOP_TRACER);
             traceToken = Optional.ofNullable(tunnelTraceId);
+        }
+    }
+
+    /**
+     * @param contextPropagator context propagator to use
+     * @param servletRequest http request with headers
+     * @return header value extracted from http request based on context propagator
+     */
+    private static String getPropagatedContext(String contextPropagator, HttpServletRequest servletRequest)
+    {
+        if (contextPropagator.equals(TracingConfig.ContextPropagator.W3C)) {
+            return servletRequest.getHeader(PRESTO_W3C_PROPAGATION);
+        }
+        else if (contextPropagator.equals(TracingConfig.ContextPropagator.B3_SINGLE_HEADER)) {
+            Enumeration<String> headerNames = servletRequest.getHeaderNames();
+            return servletRequest.getHeader(PRESTO_B3_SINGLE_HEADER_PROPAGATION);
+        }
+        else {
+            return null;
         }
     }
 

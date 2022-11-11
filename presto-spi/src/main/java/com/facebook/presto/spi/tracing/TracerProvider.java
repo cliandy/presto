@@ -22,5 +22,5 @@ public interface TracerProvider
      *
      * @return A @Tracer that should be kept throughout the whole duration of tracing.
      */
-    Tracer getNewTracer(String traceToken);
+    Tracer getNewTracer(String traceToken, String contextPropagator, String propagatedContext);
 }
