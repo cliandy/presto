@@ -2128,6 +2128,12 @@
 
             <dependency>
                 <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-extension-trace-propagators</artifactId>
+                <version>1.19.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
                 <artifactId>opentelemetry-sdk</artifactId>
                 <version>1.19.0</version>
             </dependency>

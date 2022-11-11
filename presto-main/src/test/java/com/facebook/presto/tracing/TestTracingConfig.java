@@ -30,6 +30,7 @@ public class TestTracingConfig
         assertRecordedDefaults(ConfigAssertions.recordDefaults(TracingConfig.class)
                 .setTracerType("noop")
                 .setEnableDistributedTracing(false)
+                .setContextPropagator(TracingConfig.ContextPropagator.B3_SINGLE_HEADER)
                 .setDistributedTracingMode(TracingConfig.DistributedTracingMode.NO_TRACE.name()));
     }
 
@@ -39,12 +40,14 @@ public class TestTracingConfig
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("tracing.tracer-type", "simple")
                 .put("tracing.enable-distributed-tracing", "true")
+                .put("tracing.context-propagator", "b3_single_header")
                 .put("tracing.distributed-tracing-mode", "always_trace")
                 .build();
 
         TracingConfig expected = new TracingConfig()
                 .setTracerType("simple")
                 .setEnableDistributedTracing(true)
+                .setContextPropagator("b3_single_header")
                 .setDistributedTracingMode(TracingConfig.DistributedTracingMode.ALWAYS_TRACE.name());
         assertFullMapping(properties, expected);
     }

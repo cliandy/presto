@@ -38,7 +38,7 @@ public class SimpleTracerProvider
     }
 
     @Override
-    public Tracer getNewTracer(String traceToken)
+    public Tracer getNewTracer(String traceToken, String contextPropagator, String propagatedContext)
     {
         return new SimpleTracer(traceToken);
     }

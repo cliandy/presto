@@ -44,7 +44,7 @@ public class TestSimpleTracer
     @Test
     public void testAddPoint()
     {
-        SimpleTracer tracer = (SimpleTracer) tracerProvider.getNewTracer(null);
+        SimpleTracer tracer = (SimpleTracer) tracerProvider.getNewTracer(null, null, null);
         List<CompletableFuture<?>> futures = new ArrayList<>();
         for (int i = 0; i < numThreads; i++) {
             CompletableFuture<?> future = new CompletableFuture<>();
@@ -72,7 +72,7 @@ public class TestSimpleTracer
     @Test
     public void testAddBlock()
     {
-        SimpleTracer tracer = (SimpleTracer) tracerProvider.getNewTracer(null);
+        SimpleTracer tracer = (SimpleTracer) tracerProvider.getNewTracer(null, null, null);
         List<CompletableFuture<?>> futures = new ArrayList<>();
         for (int i = 0; i < numThreads; i++) {
             CompletableFuture<?> future = new CompletableFuture<>();
@@ -103,7 +103,7 @@ public class TestSimpleTracer
     @Test
     public void testBlockErrors()
     {
-        SimpleTracer tracer = (SimpleTracer) tracerProvider.getNewTracer(null);
+        SimpleTracer tracer = (SimpleTracer) tracerProvider.getNewTracer(null, null, null);
 
         // Duplicate block
         PrestoException exception = expectThrows(PrestoException.class, () -> {

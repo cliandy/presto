@@ -52,5 +52,8 @@ public final class PrestoHeaders
     public static final String PRESTO_BUFFER_COMPLETE = "X-Presto-Buffer-Complete";
     public static final String PRESTO_PREFIX_URL = "X-Presto-Prefix-Url";
 
+    public static final String PRESTO_W3C_PROPAGATION = "traceparent";
+    public static final String PRESTO_B3_SINGLE_HEADER_PROPAGATION = "b3";
+
     private PrestoHeaders() {}
 }
